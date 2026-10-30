@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reset password — RacketCall</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --bg: #ffffff; --fg: #1c1c1e; --muted: #6e6e73; --accent: #0a84ff; --line: #e5e5ea; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #000000; --fg: #f2f2f7; --muted: #98989d; --accent: #64d2ff; --line: #2c2c2e; }
+  }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+  nav { display: flex; gap: 12px; margin-bottom: 24px; }
+  nav a { color: var(--accent); text-decoration: none; font-weight: 600; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 28px 0 8px; }
+  .date { color: var(--muted); margin: 0 0 24px; }
+  section + section { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 32px; }
+  ul { padding-left: 20px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<style>
+  form { display: grid; gap: 12px; margin-top: 16px; }
+  input { font: inherit; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
+          background: transparent; color: var(--fg); }
+  button { font: inherit; font-weight: 600; padding: 12px; border: 0; border-radius: 12px;
+           background: var(--accent); color: #000; cursor: pointer; }
+  button:disabled { opacity: .5; }
+  .msg { margin-top: 12px; }
+  .error { color: #ff453a; }
+</style>
+</head>
+<body>
+<main>
+<h1 id="title">Reset your password</h1>
+<p class="date" id="hint"></p>
+<form id="form" hidden>
+  <input id="password" type="password" autocomplete="new-password" minlength="8" required>
+  <input id="confirm" type="password" autocomplete="new-password" minlength="8" required>
+  <button id="save" type="submit"></button>
+</form>
+<p class="msg" id="msg"></p>
+</main>
+<script>
+const SUPABASE_URL = "https://gvujxeeoqeelhgefhykq.supabase.co";
+// Publishable key: public by design, the same one the app ships with.
+const SUPABASE_KEY = "sb_publishable_70zZl_ib7Q5rPMZo2hvf2g_yY_unIIh";
+
+const T = {
+  en: { title: "Reset your password", hint: "Choose a new password for your RacketCall account.",
+        password: "New password (8+ characters)", confirm: "Repeat the new password", save: "Save password",
+        mismatch: "The passwords don't match.", short: "Use at least 8 characters.",
+        done: "Password changed. Go back to RacketCall and sign in with the new password.",
+        invalid: "This link is invalid or has expired. In RacketCall, tap “Forgot password?” to get a new one.",
+        failed: "Couldn't change the password: " },
+  es: { title: "Restablecer la contraseña", hint: "Elige una contraseña nueva para tu cuenta de RacketCall.",
+        password: "Contraseña nueva (8+ caracteres)", confirm: "Repite la contraseña nueva", save: "Guardar contraseña",
+        mismatch: "Las contraseñas no coinciden.", short: "Usa al menos 8 caracteres.",
+        done: "Contraseña cambiada. Vuelve a RacketCall e inicia sesión con la contraseña nueva.",
+        invalid: "Este enlace no es válido o ha caducado. En RacketCall, toca «¿Olvidaste la contraseña?» para recibir otro.",
+        failed: "No se pudo cambiar la contraseña: " },
+  ru: { title: "Сброс пароля", hint: "Придумайте новый пароль для аккаунта RacketCall.",
+        password: "Новый пароль (от 8 символов)", confirm: "Повторите новый пароль", save: "Сохранить пароль",
+        mismatch: "Пароли не совпадают.", short: "Нужно не меньше 8 символов.",
+        done: "Пароль изменён. Вернитесь в RacketCall и войдите с новым паролем.",
+        invalid: "Ссылка недействительна или устарела. В RacketCall нажмите «Забыли пароль?», чтобы получить новую.",
+        failed: "Не удалось сменить пароль: " },
+};
+const lang = (navigator.language || "en").slice(0, 2);
+const t = T[lang] || T.en;
+document.documentElement.lang = T[lang] ? lang : "en";
+const $ = id => document.getElementById(id);
+$("title").textContent = t.title;
+$("hint").textContent = t.hint;
+$("password").placeholder = t.password;
+$("confirm").placeholder = t.confirm;
+$("save").textContent = t.save;
+
+const params = new URLSearchParams(location.hash.slice(1));
+const token = params.get("access_token");
+history.replaceState(null, "", location.pathname); // keep the token out of history and screenshots
+
+function say(text, isError) {
+  $("msg").textContent = text;
+  $("msg").className = "msg" + (isError ? " error" : "");
+}
+
+if (!token || params.get("type") !== "recovery") {
+  say(t.invalid, true);
+} else {
+  $("form").hidden = false;
+  $("form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const password = $("password").value;
+    if (password.length < 8) return say(t.short, true);
+    if (password !== $("confirm").value) return say(t.mismatch, true);
+    $("save").disabled = true;
+    try {
+      const response = await fetch(SUPABASE_URL + "/auth/v1/user", {
+        method: "PUT",
+        headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (response.ok) {
+        $("form").hidden = true;
+        say(t.done, false);
+      } else {
+        const body = await response.json().catch(() => ({}));
+        if (response.status === 401 || response.status === 403) say(t.invalid, true);
+        else say(t.failed + (body.msg || body.message || response.status), true);
+        $("save").disabled = false;
+      }
+    } catch (error) {
+      say(t.failed + error.message, true);
+      $("save").disabled = false;
+    }
+  });
+}
+</script>
+</body>
+</html>
