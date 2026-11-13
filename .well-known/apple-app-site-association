@@ -4,7 +4,8 @@
       {
         "appIDs": ["5DUW9NG2LH.app.courtcall.ios"],
         "components": [
-          { "/": "/join/*", "comment": "Community invites" }
+          { "/": "/join/*", "comment": "Community invites" },
+          { "/": "/t/*", "comment": "Club tournament invites" }
         ]
       }
     ]

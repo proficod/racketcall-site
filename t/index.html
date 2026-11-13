@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tournament — RacketCall</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --bg: #ffffff; --fg: #1c1c1e; --muted: #6e6e73; --accent: #0a84ff; --line: #e5e5ea; --card: #f2f2f7; --win: #34c759; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #000000; --fg: #f2f2f7; --muted: #98989d; --accent: #64d2ff; --line: #2c2c2e; --card: #1c1c1e; --win: #30d158; }
+  }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 28px 0 8px; }
+  h3 { font-size: 16px; margin: 18px 0 6px; color: var(--muted); }
+  p { color: var(--muted); margin: 0 0 16px; }
+  .code { font: 700 28px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 4px; padding: 12px;
+          border: 1px solid var(--line); border-radius: 14px; text-align: center; user-select: all; margin: 8px 0; }
+  a.button, button { display: block; width: 100%; box-sizing: border-box; font: inherit; font-weight: 600; padding: 12px;
+                     border-radius: 12px; border: 0; cursor: pointer; text-decoration: none; text-align: center; margin-top: 8px; }
+  .primary { background: var(--accent); color: #000; }
+  .secondary { background: transparent; color: var(--accent); border: 1px solid var(--line) !important; }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; margin: 16px 0 4px; }
+  .tabs button { width: auto; flex: none; margin: 0; padding: 8px 14px; background: var(--card); color: var(--fg); border-radius: 999px; }
+  .tabs button.on { background: var(--accent); color: #000; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 10px; text-align: center; font-size: 14px; }
+  th { color: var(--muted); font-weight: 600; }
+  td.name, th.name { text-align: left; }
+  tr.adv td { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .match { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; background: var(--card); border-radius: 12px; margin: 6px 0; font-size: 15px; }
+  .match .w { font-weight: 700; }
+  .score { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; text-align: right; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .live { color: #ff453a; font-weight: 700; font-size: 12px; letter-spacing: .5px; }
+  .live::before { content: "● "; animation: blink 1s infinite alternate; }
+  @keyframes blink { from { opacity: 1; } to { opacity: .3; } }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">Tournament</h1>
+  <p id="hint"></p>
+  <div id="invite">
+    <div class="code" id="code">—</div>
+    <a class="button primary" id="open" href="#"></a>
+    <a class="button secondary" id="store" href="https://apps.apple.com/app/id6828844909"></a>
+  </div>
+  <div id="levels" class="tabs"></div>
+  <div id="board"></div>
+  <p class="muted" id="updated"></p>
+</main>
+<script>
+let hasLive = false;
+const SUPABASE_URL = "https://gvujxeeoqeelhgefhykq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_70zZl_ib7Q5rPMZo2hvf2g_yY_unIIh";
+const T = {
+  en: { title: "Join a tournament", hint: "You've been invited to a club tournament on RacketCall.", open: "Open in RacketCall", store: "Get RacketCall on the App Store",
+        group: "Group", player: "Player", w: "W", games: "Games", playoffs: "Playoffs", final: "Final", semis: "Semi-finals", quarters: "Quarter-finals",
+        round: "Round", third: "3rd place", pending: "To be decided", unconfirmed: "awaiting confirmation", updated: "Updated", notFound: "This tournament isn't public yet — it appears here after the draw.",
+        android: "No iPhone? Follow the tables and brackets right here; the page refreshes every minute." },
+  es: { title: "Únete a un torneo", hint: "Te han invitado a un torneo de club en RacketCall.", open: "Abrir en RacketCall", store: "Descargar RacketCall en el App Store",
+        group: "Grupo", player: "Jugador", w: "V", games: "Juegos", playoffs: "Eliminatorias", final: "Final", semis: "Semifinales", quarters: "Cuartos de final",
+        round: "Ronda", third: "3.er puesto", pending: "Por decidir", unconfirmed: "pendiente de confirmar", updated: "Actualizado", notFound: "El torneo aún no es público: aparecerá aquí tras el sorteo.",
+        android: "¿Sin iPhone? Sigue aquí los grupos y el cuadro; la página se actualiza cada minuto." },
+  ru: { title: "Участвовать в турнире", hint: "Вас пригласили на клубный турнир в RacketCall.", open: "Открыть в RacketCall", store: "Скачать RacketCall в App Store",
+        group: "Группа", player: "Игрок", w: "В", games: "Геймы", playoffs: "Плей-офф", final: "Финал", semis: "Полуфиналы", quarters: "Четвертьфиналы",
+        round: "Раунд", third: "За 3-е место", pending: "Определится позже", unconfirmed: "ждёт подтверждения", updated: "Обновлено", notFound: "Турнир ещё не открыт: он появится здесь после жеребьёвки.",
+        android: "Нет iPhone? Следите за таблицами и сеткой здесь, страница обновляется каждую минуту." },
+  de: { title: "Einem Turnier beitreten", hint: "Du bist zu einem Clubturnier auf RacketCall eingeladen.", open: "In RacketCall öffnen", store: "RacketCall im App Store laden",
+        group: "Gruppe", player: "Spieler", w: "S", games: "Spiele", playoffs: "Playoffs", final: "Finale", semis: "Halbfinale", quarters: "Viertelfinale",
+        round: "Runde", third: "Platz 3", pending: "Steht noch nicht fest", unconfirmed: "wartet auf Bestätigung", updated: "Aktualisiert", notFound: "Das Turnier ist noch nicht öffentlich – es erscheint hier nach der Auslosung.",
+        android: "Kein iPhone? Verfolge Tabellen und Turnierbaum hier; die Seite aktualisiert sich jede Minute." },
+  fr: { title: "Rejoindre un tournoi", hint: "Vous êtes invité à un tournoi de club sur RacketCall.", open: "Ouvrir dans RacketCall", store: "Télécharger RacketCall sur l'App Store",
+        group: "Groupe", player: "Joueur", w: "V", games: "Jeux", playoffs: "Phase finale", final: "Finale", semis: "Demi-finales", quarters: "Quarts de finale",
+        round: "Tour", third: "3e place", pending: "À déterminer", unconfirmed: "en attente de confirmation", updated: "Mis à jour", notFound: "Ce tournoi n'est pas encore public : il apparaîtra ici après le tirage.",
+        android: "Pas d'iPhone ? Suivez les poules et le tableau ici ; la page se met à jour chaque minute." },
+  it: { title: "Partecipa a un torneo", hint: "Sei invitato a un torneo di circolo su RacketCall.", open: "Apri in RacketCall", store: "Scarica RacketCall dall'App Store",
+        group: "Girone", player: "Giocatore", w: "V", games: "Game", playoffs: "Fase finale", final: "Finale", semis: "Semifinali", quarters: "Quarti di finale",
+        round: "Turno", third: "3° posto", pending: "Da definire", unconfirmed: "in attesa di conferma", updated: "Aggiornato", notFound: "Il torneo non è ancora pubblico: comparirà qui dopo il sorteggio.",
+        android: "Niente iPhone? Segui qui gironi e tabellone; la pagina si aggiorna ogni minuto." },
+  pt: { title: "Participar de um torneio", hint: "Você foi convidado para um torneio de clube no RacketCall.", open: "Abrir no RacketCall", store: "Baixar o RacketCall na App Store",
+        group: "Grupo", player: "Jogador", w: "V", games: "Games", playoffs: "Mata-mata", final: "Final", semis: "Semifinais", quarters: "Quartas de final",
+        round: "Rodada", third: "3º lugar", pending: "A definir", unconfirmed: "aguardando confirmação", updated: "Atualizado", notFound: "O torneio ainda não é público — aparece aqui depois do sorteio.",
+        android: "Sem iPhone? Acompanhe aqui os grupos e a chave; a página atualiza a cada minuto." },
+  nl: { title: "Meedoen aan een toernooi", hint: "Je bent uitgenodigd voor een clubtoernooi op RacketCall.", open: "Openen in RacketCall", store: "RacketCall downloaden in de App Store",
+        group: "Poule", player: "Speler", w: "W", games: "Games", playoffs: "Play-offs", final: "Finale", semis: "Halve finales", quarters: "Kwartfinales",
+        round: "Ronde", third: "3e plaats", pending: "Nog niet bekend", unconfirmed: "wacht op bevestiging", updated: "Bijgewerkt", notFound: "Het toernooi is nog niet openbaar — het verschijnt hier na de loting.",
+        android: "Geen iPhone? Volg hier de poules en het schema; de pagina ververst elke minuut." },
+  sv: { title: "Gå med i en turnering", hint: "Du är inbjuden till en klubbturnering på RacketCall.", open: "Öppna i RacketCall", store: "Hämta RacketCall i App Store",
+        group: "Grupp", player: "Spelare", w: "V", games: "Game", playoffs: "Slutspel", final: "Final", semis: "Semifinaler", quarters: "Kvartsfinaler",
+        round: "Omgång", third: "3:e plats", pending: "Inte klart än", unconfirmed: "väntar på bekräftelse", updated: "Uppdaterad", notFound: "Turneringen är inte offentlig än – den visas här efter lottningen.",
+        android: "Ingen iPhone? Följ grupper och slutspel här; sidan uppdateras varje minut." },
+  cs: { title: "Přihlásit se do turnaje", hint: "Jste pozváni na klubový turnaj v RacketCall.", open: "Otevřít v RacketCall", store: "Stáhnout RacketCall v App Store",
+        group: "Skupina", player: "Hráč", w: "V", games: "Gemy", playoffs: "Play-off", final: "Finále", semis: "Semifinále", quarters: "Čtvrtfinále",
+        round: "Kolo", third: "3. místo", pending: "Určí se později", unconfirmed: "čeká na potvrzení", updated: "Aktualizováno", notFound: "Turnaj zatím není veřejný — objeví se tu po losu.",
+        android: "Nemáte iPhone? Sledujte skupiny a pavouka tady; stránka se obnovuje každou minutu." },
+  pl: { title: "Dołącz do turnieju", hint: "Zaproszono cię na turniej klubowy w RacketCall.", open: "Otwórz w RacketCall", store: "Pobierz RacketCall z App Store",
+        group: "Grupa", player: "Gracz", w: "Z", games: "Gemy", playoffs: "Faza pucharowa", final: "Finał", semis: "Półfinały", quarters: "Ćwierćfinały",
+        round: "Runda", third: "3. miejsce", pending: "Do ustalenia", unconfirmed: "czeka na potwierdzenie", updated: "Zaktualizowano", notFound: "Turniej nie jest jeszcze publiczny — pojawi się tu po losowaniu.",
+        android: "Nie masz iPhone'a? Śledź tu grupy i drabinkę; strona odświeża się co minutę." },
+};
+const lang = (navigator.language || "en").slice(0, 2);
+const t = T[lang] || T.en;
+const code = (new URLSearchParams(location.search).get("code") || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase();
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+document.documentElement.lang = lang;
+$("title").textContent = t.title; $("hint").textContent = t.hint; $("code").textContent = code || "—";
+$("open").textContent = t.open; $("open").href = "courtcall://t?code=" + encodeURIComponent(code);
+$("store").textContent = t.store;
+
+// --- The same rules as the app (Packages/ScoreKit/ClubTournament.swift) ---
+const key = (o) => Object.keys(o)[0];
+const winnerOf = (r) => { if (!r) return null; let a = 0, b = 0; for (const s of r.sets) { if (s.a > s.b) a++; else if (s.b > s.a) b++; } return a === b ? null : (a > b ? "a" : "b"); };
+const games = (r) => r.sets.reduce((g, s) => ({ a: g.a + s.a, b: g.b + s.b }), { a: 0, b: 0 });
+
+function standings(div, group) {
+  const rows = new Map(div.groups[group].map((p) => [p, { player: p, played: 0, wins: 0, gw: 0, gl: 0 }]));
+  const ms = div.matches.filter((m) => key(m.stage) === "group" && m.stage.group._0 === group);
+  for (const m of ms) {
+    if (key(m.a) !== "player" || key(m.b) !== "player" || !m.result) continue;
+    const a = m.a.player._0, b = m.b.player._0, g = games(m.result), w = winnerOf(m.result);
+    for (const [p, own, other, side] of [[a, g.a, g.b, "a"], [b, g.b, g.a, "b"]]) {
+      const r = rows.get(p); if (!r) continue; r.played++; r.gw += own; r.gl += other; if (w === side) r.wins++;
+    }
+  }
+  const rank = (tied, criteria) => {
+    if (tied.length < 2) return tied;
+    if (!criteria.length) return tied.sort((x, y) => div.lots[x] - div.lots[y]);
+    const set = new Set(tied), c = criteria[0];
+    const value = (p) => {
+      const r = rows.get(p);
+      if (c === "wins") return r.wins; if (c === "gameDifference") return r.gw - r.gl; if (c === "gamesWon") return r.gw;
+      return ms.filter((m) => key(m.a) === "player" && key(m.b) === "player" && set.has(m.a.player._0) && set.has(m.b.player._0)
+        && winnerOf(m.result) && (winnerOf(m.result) === "a" ? m.a.player._0 : m.b.player._0) === p).length;
+    };
+    const buckets = new Map(); for (const p of tied) { const v = value(p); if (!buckets.has(v)) buckets.set(v, []); buckets.get(v).push(p); }
+    return [...buckets.keys()].sort((x, y) => y - x).flatMap((v) => rank(buckets.get(v), criteria.slice(1)));
+  };
+  return rank([...div.groups[group]], div.rules.ranking).map((p) => rows.get(p));
+}
+const groupDone = (div, g) => div.matches.every((m) => key(m.stage) !== "group" || m.stage.group._0 !== g || m.result);
+function participant(div, e) {
+  const k = key(e);
+  if (k === "player") return e.player._0;
+  if (k === "bye") return "bye";
+  if (k === "groupPlace") { const { group, place } = e.groupPlace; if (!groupDone(div, group)) return null; const s = standings(div, group); return place - 1 < s.length ? s[place - 1].player : "bye"; }
+  const id = e[k].of, m = div.matches.find((x) => x.id === id); if (!m) return null;
+  const a = participant(div, m.a), b = participant(div, m.b), wants = k === "winner";
+  if (a === "bye" && b === "bye") return "bye";
+  if (a === "bye") return wants ? b : "bye"; if (b === "bye") return wants ? a : "bye";
+  const w = winnerOf(m.result); if (!w) return null;
+  return (w === "a") === wants ? a : b;
+}
+
+function render(data) {
+  const board = $("board"), levels = $("levels"); board.innerHTML = ""; levels.innerHTML = "";
+  $("title").textContent = data.name; $("hint").textContent = t.android;
+  const results = new Map(data.results.map((r) => [String(r.match_id).toLowerCase(), r]));
+  const live = new Map((data.live || []).filter((l) => l.match_id && l.state).map((l) => [String(l.match_id).toLowerCase(), l.state]));
+  hasLive = live.size > 0;
+  const divisions = data.tournament.divisions;
+  for (const d of divisions) for (const m of d.matches) { const r = results.get(m.id.toLowerCase()); if (r && !r.disputed) m.result = { sets: r.sets }; m.meta = r; }
+  const current = Math.min(Number(sessionStorage.getItem("level") || 0), divisions.length - 1);
+  if (divisions.length > 1) divisions.forEach((d, i) => {
+    const b = el("button", i === current ? "on" : "", d.rules.name); b.onclick = () => { try { sessionStorage.setItem("level", i); } catch (e) {} render(data); }; levels.appendChild(b);
+  });
+  const div = divisions[current];
+  const name = (e) => { const p = participant(div, e); return p === null ? t.pending : p === "bye" ? "—" : div.players[p].name; };
+  const matchRow = (m) => {
+    const row = el("div", "match"), names = el("div"), w = winnerOf(m.result);
+    const a = el("div", w === "a" ? "w" : "", name(m.a)), b = el("div", w === "b" ? "w" : "", name(m.b));
+    names.append(a, b);
+    const now = live.get(m.id.toLowerCase());
+    const score = el("div", "score", m.result ? m.result.sets.map((s) => s.a + "–" + s.b).join(" ") : "");
+    if (!m.result && now) {
+      // Being played right now on a scoreboard.
+      score.appendChild(el("div", "live", "LIVE"));
+      const games = now.gamesA != null ? now.gamesA + "–" + now.gamesB + " · " : "";
+      score.appendChild(el("div", "", games + now.pointsA + "–" + now.pointsB));
+    }
+    if (m.meta && !m.meta.confirmed && !m.meta.disputed) score.appendChild(el("div", "muted", t.unconfirmed));
+    row.append(names, score); return row;
+  };
+  const adv = (div.rules.playoffs[0] || { places: [0, 0] }).places[1];
+  div.groups.forEach((_, g) => {
+    board.appendChild(el("h2", "", t.group + " " + String.fromCharCode(65 + g)));
+    const table = el("table"), head = el("tr");
+    for (const [c, cls] of [["#", ""], [t.player, "name"], [t.w, ""], [t.games, ""], ["±", ""]]) head.appendChild(el("th", cls, c));
+    table.appendChild(head);
+    standings(div, g).forEach((r, i) => {
+      const tr = el("tr", i < adv ? "adv" : "");
+      for (const [c, cls] of [[i + 1, ""], [div.players[r.player].name, "name"], [r.wins, ""], [r.gw + "–" + r.gl, ""], [(r.gw - r.gl > 0 ? "+" : "") + (r.gw - r.gl), ""]]) tr.appendChild(el("td", cls, c));
+      table.appendChild(tr);
+    });
+    board.appendChild(table);
+    div.matches.filter((m) => key(m.stage) === "group" && m.stage.group._0 === g).forEach((m) => board.appendChild(matchRow(m)));
+  });
+  div.rules.playoffs.forEach((rule, bracket) => {
+    const ms = div.matches.filter((m) => (key(m.stage) === "playoff" && m.stage.playoff.bracket === bracket && key(m.a) !== "bye" && key(m.b) !== "bye")
+                                       || (key(m.stage) === "thirdPlace" && m.stage.thirdPlace.bracket === bracket));
+    if (!ms.length) return;
+    board.appendChild(el("h2", "", rule.name === "Main draw" || bracket === 0 ? t.playoffs : rule.name));
+    const last = Math.max(0, ...ms.filter((m) => key(m.stage) === "playoff").map((m) => m.stage.playoff.round));
+    for (let r = 1; r <= last; r++) {
+      const list = ms.filter((m) => key(m.stage) === "playoff" && m.stage.playoff.round === r); if (!list.length) continue;
+      board.appendChild(el("h3", "", last - r === 0 ? t.final : last - r === 1 ? t.semis : last - r === 2 ? t.quarters : t.round + " " + r));
+      list.forEach((m) => board.appendChild(matchRow(m)));
+    }
+    const third = ms.filter((m) => key(m.stage) === "thirdPlace");
+    if (third.length) { board.appendChild(el("h3", "", t.third)); third.forEach((m) => board.appendChild(matchRow(m))); }
+  });
+  $("updated").textContent = t.updated + " " + new Date().toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
+}
+
+async function load() {
+  if (code.length !== 6) return;
+  try {
+    const response = await fetch(SUPABASE_URL + "/rest/v1/rpc/public_club_tournament", {
+      method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_code: code }) });
+    const data = await response.json();
+    if (data && data.tournament) render(data); else $("updated").textContent = t.notFound;
+  } catch (e) { /* offline: keep what's on screen */ }
+}
+
+// Every 15 seconds while a match is live, otherwise every minute.
+async function loop() { await load(); setTimeout(loop, hasLive ? 15000 : 60000); }
+loop();
+</script>
+</body>
+</html>
