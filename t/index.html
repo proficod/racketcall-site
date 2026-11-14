@@ -31,6 +31,7 @@
   --cell: #dcf24a; --cell-ink: #1b2300; --cell-lose: #1f2c43; --cell-lose-ink: #8e99ad;
   --up: #5bd08b; --down: #ff7a70; --live: #ff5248; --adv: #dcf24a; color-scheme: dark }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/1.5 var(--font); font-stretch: 100%; -webkit-font-smoothing: antialiased; }
 .inner { max-width: 1280px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
@@ -138,6 +139,18 @@ tr.adv td.pos span { display: inline-grid; place-items: center; width: 20px; hei
 .champion { display: inline-flex; align-items: center; gap: 6px; }
 .champion::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--ball); box-shadow: 0 0 0 2px var(--ink); flex: none; }
 
+.signup { padding: 22px; display: grid; gap: 14px; max-width: 640px; }
+.signup h2 { margin: 0; font: 400 clamp(28px, 6vw, 40px)/1 var(--display); letter-spacing: .01em; text-transform: uppercase; }
+.signup h2::after { display: none; }
+.signup .meta { color: var(--muted); margin: 0; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 10px; }
+.field { display: grid; gap: 6px; font: 700 11px/1 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.field input { font: 500 17px/1.2 var(--font); letter-spacing: 0; text-transform: none; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; width: 100%; }
+.field input:focus { outline: 3px solid var(--ball); outline-offset: 1px; }
+.signup .btn { justify-self: start; min-width: 200px; border: 0; cursor: pointer; }
+.signup .btn:disabled { opacity: .6; }
+.note { margin: 0; font-weight: 600; } .note.ok { color: var(--up); } .note.bad { color: var(--down); }
+@media (max-width: 760px) { .signup .btn { justify-self: stretch; } }
 .foot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 13px; padding-top: 14px; border-top: 1px solid var(--line); }
 .foot a { color: var(--ink); font-weight: 800; text-decoration: none; border-bottom: 2px solid var(--ball); }
 </style>
@@ -238,8 +251,21 @@ const X = {
   cs: { live: "Probíhá", done: "Ukončený", main: "Hlavní pavouk", cons: "Útěcha", code: "Kód", getApp: "Stáhnout RacketCall", tables: "Skupiny", levels: "úrovně", players: "hráčů" },
   pl: { live: "Trwa", done: "Zakończony", main: "Drabinka główna", cons: "Pocieszenie", code: "Kod", getApp: "Pobierz RacketCall", tables: "Grupy", levels: "poziomy", players: "graczy" },
 };
+const SIGNUP = {
+  en: { signupOpen: "Sign-up open", h: "Take part without an iPhone", p: "Type your first and last name. The organizer adds you to a level, and you follow your group and matches on this page.", first: "First name", last: "Last name", send: "Take part", sending: "Sending…", ok: "Done — you're on the list. The organizer will add you to a level; after the draw your group appears here.", closed: "The draw is made, sign-up is closed. Ask the organizer to add you.", invalid: "Type a first and last name, letters only.", busy: "Too many sign-ups right now — try again in a minute.", full: "This tournament is full.", fail: "Couldn't send. Check the connection and try again.", again: "Sign up someone else" },
+  es: { signupOpen: "Inscripción abierta", h: "Participa sin iPhone", p: "Escribe tu nombre y apellido. El organizador te añade a un nivel y sigues tu grupo y tus partidos en esta página.", first: "Nombre", last: "Apellido", send: "Participar", sending: "Enviando…", ok: "Listo, estás en la lista. El organizador te añadirá a un nivel; tras el sorteo tu grupo aparecerá aquí.", closed: "El sorteo ya está hecho y la inscripción cerrada. Pide al organizador que te añada.", invalid: "Escribe nombre y apellido, solo letras.", busy: "Demasiadas inscripciones ahora mismo, prueba en un minuto.", full: "Este torneo está completo.", fail: "No se pudo enviar. Revisa la conexión e inténtalo de nuevo.", again: "Inscribir a otra persona" },
+  ru: { signupOpen: "Идёт запись", h: "Участвовать без iPhone", p: "Впишите имя и фамилию. Организатор добавит вас в уровень, а свою группу и матчи вы увидите на этой странице.", first: "Имя", last: "Фамилия", send: "Участвовать", sending: "Отправляем…", ok: "Готово, вы в списке. Организатор добавит вас в уровень; после жеребьёвки здесь появится ваша группа.", closed: "Жеребьёвка уже прошла, запись закрыта. Попросите организатора добавить вас.", invalid: "Впишите имя и фамилию, только буквы.", busy: "Сейчас слишком много заявок — попробуйте через минуту.", full: "Мест в турнире больше нет.", fail: "Не получилось отправить. Проверьте интернет и попробуйте ещё раз.", again: "Записать ещё одного человека" },
+  de: { signupOpen: "Anmeldung offen", h: "Ohne iPhone mitspielen", p: "Gib Vor- und Nachnamen ein. Die Turnierleitung teilt dich einer Stufe zu, deine Gruppe und Matches siehst du auf dieser Seite.", first: "Vorname", last: "Nachname", send: "Mitspielen", sending: "Wird gesendet…", ok: "Fertig, du stehst auf der Liste. Nach der Auslosung erscheint hier deine Gruppe.", closed: "Die Auslosung ist erfolgt, die Anmeldung geschlossen. Bitte die Turnierleitung, dich hinzuzufügen.", invalid: "Gib Vor- und Nachnamen ein, nur Buchstaben.", busy: "Gerade zu viele Anmeldungen, versuch es in einer Minute erneut.", full: "Das Turnier ist voll.", fail: "Senden fehlgeschlagen. Prüfe die Verbindung und versuch es erneut.", again: "Weitere Person anmelden" },
+  fr: { signupOpen: "Inscriptions ouvertes", h: "Participer sans iPhone", p: "Indique ton prénom et ton nom. L'organisateur t'ajoute à un niveau et tu suis ta poule et tes matchs sur cette page.", first: "Prénom", last: "Nom", send: "Participer", sending: "Envoi…", ok: "C'est fait, tu es sur la liste. Après le tirage, ta poule apparaîtra ici.", closed: "Le tirage est fait, les inscriptions sont closes. Demande à l'organisateur de t'ajouter.", invalid: "Indique un prénom et un nom, en lettres uniquement.", busy: "Trop d'inscriptions en ce moment, réessaie dans une minute.", full: "Ce tournoi est complet.", fail: "Envoi impossible. Vérifie la connexion et réessaie.", again: "Inscrire une autre personne" },
+  it: { signupOpen: "Iscrizioni aperte", h: "Partecipa senza iPhone", p: "Scrivi nome e cognome. L'organizzatore ti aggiunge a un livello e segui girone e partite su questa pagina.", first: "Nome", last: "Cognome", send: "Partecipa", sending: "Invio…", ok: "Fatto, sei nella lista. Dopo il sorteggio qui comparirà il tuo girone.", closed: "Il sorteggio è fatto, iscrizioni chiuse. Chiedi all'organizzatore di aggiungerti.", invalid: "Scrivi nome e cognome, solo lettere.", busy: "Troppe iscrizioni in questo momento, riprova tra un minuto.", full: "Il torneo è al completo.", fail: "Invio non riuscito. Controlla la connessione e riprova.", again: "Iscrivi un'altra persona" },
+  pt: { signupOpen: "Inscrições abertas", h: "Participe sem iPhone", p: "Digite seu nome e sobrenome. O organizador coloca você num nível e você acompanha seu grupo e jogos nesta página.", first: "Nome", last: "Sobrenome", send: "Participar", sending: "Enviando…", ok: "Pronto, você está na lista. Depois do sorteio seu grupo aparece aqui.", closed: "O sorteio já foi feito e as inscrições fecharam. Peça ao organizador para incluir você.", invalid: "Digite nome e sobrenome, só letras.", busy: "Muitas inscrições agora, tente de novo em um minuto.", full: "Este torneio está lotado.", fail: "Não foi possível enviar. Verifique a conexão e tente de novo.", again: "Inscrever outra pessoa" },
+  nl: { signupOpen: "Aanmelden open", h: "Meedoen zonder iPhone", p: "Vul je voor- en achternaam in. De organisator zet je in een niveau en je volgt je poule en wedstrijden op deze pagina.", first: "Voornaam", last: "Achternaam", send: "Meedoen", sending: "Versturen…", ok: "Gelukt, je staat op de lijst. Na de loting verschijnt hier je poule.", closed: "De loting is gedaan, aanmelden is gesloten. Vraag de organisator je toe te voegen.", invalid: "Vul een voor- en achternaam in, alleen letters.", busy: "Nu te veel aanmeldingen, probeer het over een minuut opnieuw.", full: "Dit toernooi is vol.", fail: "Versturen mislukt. Controleer de verbinding en probeer opnieuw.", again: "Iemand anders aanmelden" },
+  sv: { signupOpen: "Anmälan öppen", h: "Spela utan iPhone", p: "Skriv för- och efternamn. Arrangören lägger dig i en nivå och du följer din grupp och dina matcher på den här sidan.", first: "Förnamn", last: "Efternamn", send: "Delta", sending: "Skickar…", ok: "Klart, du står på listan. Efter lottningen visas din grupp här.", closed: "Lottningen är gjord och anmälan stängd. Be arrangören lägga till dig.", invalid: "Skriv för- och efternamn, bara bokstäver.", busy: "För många anmälningar just nu, försök igen om en minut.", full: "Turneringen är full.", fail: "Det gick inte att skicka. Kontrollera anslutningen och försök igen.", again: "Anmäl någon annan" },
+  cs: { signupOpen: "Přihlášky otevřené", h: "Hrát i bez iPhonu", p: "Napište jméno a příjmení. Pořadatel vás zařadí do úrovně a svou skupinu a zápasy uvidíte na této stránce.", first: "Jméno", last: "Příjmení", send: "Přihlásit se", sending: "Odesílám…", ok: "Hotovo, jste na seznamu. Po losu se tu objeví vaše skupina.", closed: "Los už proběhl, přihlášky jsou uzavřené. Požádejte pořadatele, ať vás přidá.", invalid: "Napište jméno a příjmení, jen písmena.", busy: "Teď je přihlášek příliš, zkuste to za minutu.", full: "Turnaj je plný.", fail: "Nepodařilo se odeslat. Zkontrolujte připojení a zkuste to znovu.", again: "Přihlásit dalšího hráče" },
+  pl: { signupOpen: "Zapisy otwarte", h: "Zagraj bez iPhone’a", p: "Wpisz imię i nazwisko. Organizator doda cię do poziomu, a swoją grupę i mecze zobaczysz na tej stronie.", first: "Imię", last: "Nazwisko", send: "Zgłoś się", sending: "Wysyłanie…", ok: "Gotowe, jesteś na liście. Po losowaniu pojawi się tu twoja grupa.", closed: "Losowanie już się odbyło, zapisy są zamknięte. Poproś organizatora o dodanie.", invalid: "Wpisz imię i nazwisko, tylko litery.", busy: "Teraz jest za dużo zgłoszeń, spróbuj za minutę.", full: "Turniej jest pełny.", fail: "Nie udało się wysłać. Sprawdź połączenie i spróbuj ponownie.", again: "Zapisz kolejną osobę" },
+};
 const lang = (navigator.language || "en").slice(0, 2);
-const t = Object.assign({}, T.en, X.en, T[lang] || {}, X[lang] || {});
+const t = Object.assign({}, T.en, X.en, SIGNUP.en, T[lang] || {}, X[lang] || {}, SIGNUP[lang] || {});
 const code = (new URLSearchParams(location.search).get("code") || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase();
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -407,13 +433,60 @@ function render(data) {
   $("updated").textContent = t.updated + " " + new Date().toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
 }
 
+// Before the draw: the tournament's name and a sign-up form for players without an iPhone.
+let signupShown = false;
+function renderDraft(data) {
+  $("title").textContent = data.name;
+  const status = $("status"); status.hidden = false; status.textContent = t.signupOpen; status.className = "pill";
+  $("eyebrow").textContent = data.starts_at ? new Date(data.starts_at).toLocaleDateString(lang, { weekday: "long", day: "numeric", month: "long" }) : "";
+  $("hint").textContent = t.hint;
+  $("updated").textContent = "";
+  if (signupShown) return; // keep what the visitor is typing
+  signupShown = true;
+  const board = $("board"); board.innerHTML = "";
+  const card = el("form", "card signup"); card.noValidate = true;
+  card.append(el("h2", "", t.h), el("p", "meta", t.p));
+  const row = el("div", "fields");
+  const field = (id, label, auto) => {
+    const wrap = el("label", "field"); wrap.htmlFor = id;
+    const input = el("input"); input.id = id; input.name = id; input.required = true; input.maxLength = 40; input.autocomplete = auto;
+    wrap.append(el("span", "", label), input); row.appendChild(wrap); return input;
+  };
+  const first = field("first", t.first, "given-name"), last = field("last", t.last, "family-name");
+  const button = el("button", "btn primary", t.send); button.type = "submit";
+  const note = el("p", "note"); note.setAttribute("role", "status");
+  card.append(row, button, note); board.appendChild(card);
+  let done = false; try { done = localStorage.getItem("signed:" + code) === "1"; } catch (e) {}
+  const showDone = () => { row.hidden = true; button.textContent = t.again; note.className = "note ok"; note.textContent = t.ok; };
+  if (done) showDone();
+  card.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (row.hidden) { row.hidden = false; first.value = ""; last.value = ""; button.textContent = t.send; note.textContent = ""; first.focus(); return; }
+    const f = first.value.trim(), l = last.value.trim();
+    if (!f || !l) { note.className = "note bad"; note.textContent = t.invalid; return; }
+    button.disabled = true; button.textContent = t.sending; note.textContent = "";
+    let answer = "fail";
+    try {
+      const response = await fetch(SUPABASE_URL + "/rest/v1/rpc/club_signup", {
+        method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ p_code: code, p_first: f, p_last: l }) });
+      if (response.ok) answer = await response.json();
+    } catch (e) {}
+    button.disabled = false; button.textContent = t.send;
+    if (answer === "ok") { try { localStorage.setItem("signed:" + code, "1"); } catch (e) {} showDone(); }
+    else { note.className = "note bad"; note.textContent = t[answer] || t.fail; }
+  });
+}
+
 async function load() {
   if (code.length !== 6) return;
   try {
     const response = await fetch(SUPABASE_URL + "/rest/v1/rpc/public_club_tournament", {
       method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_code: code }) });
     const data = await response.json();
-    if (data && data.tournament) render(data); else $("updated").textContent = t.notFound;
+    if (data && data.tournament) { signupShown = false; render(data); }
+    else if (data && data.status === "draft") renderDraft(data);
+    else $("updated").textContent = t.notFound;
   } catch (e) { /* offline: keep what's on screen */ }
 }
 // Every 15 seconds while a match is live, otherwise every minute.
