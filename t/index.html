@@ -87,6 +87,9 @@ tr.adv td.pos span { display: inline-grid; place-items: center; width: 22px; hei
 .m .who { display: grid; gap: 5px; min-width: 0; }
 .m .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
 .m .who span.w { color: var(--ink); font-weight: 600; }
+table.points th:nth-child(3), table.points td:nth-child(3) { width: 70px; white-space: nowrap; }
+table.points th:nth-child(4), table.points td:nth-child(4) { width: 46px; }
+.m .who span.court { font-size: 12px; font-weight: 600; color: var(--muted); }
 .sets { display: grid; grid-auto-flow: column; gap: 4px; align-items: center; justify-content: end; }
 .setcol { display: grid; gap: 5px; }
 .cell { min-width: 24px; height: 22px; padding: 0 5px; display: grid; place-items: center; border-radius: 6px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; background: var(--cell-off); color: var(--cell-off-ink); }
@@ -131,6 +134,19 @@ tr.adv td.pos span { display: inline-grid; place-items: center; width: 22px; hei
 .signup .btn:disabled { opacity: .6; }
 .note { margin: 0; font-weight: 500; } .note.ok { color: var(--up); } .note.bad { color: var(--down); }
 
+.podium { padding: 22px; display: grid; gap: 8px; text-align: center; }
+.podium h2 { margin: 0; font-size: 28px; }
+.podium .meta { margin: 0 0 8px; font-size: 17px; }
+.podium .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; }
+.podium .step { display: grid; justify-items: center; gap: 8px; min-width: 0; }
+.podium .medal { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 20px; color: #fff;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.45); }
+.podium .p1 .medal { width: 56px; height: 56px; font-size: 24px; background: linear-gradient(135deg, #ffe17a, #d39a1a); }
+.podium .p2 .medal { background: linear-gradient(135deg, #eef1f5, #9ea7b2); }
+.podium .p3 .medal { background: linear-gradient(135deg, #eea96c, #9d5c2b); }
+.podium .who { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.podium .block { width: 100%; border-radius: 12px 12px 4px 4px; background: color-mix(in srgb, var(--blue) 55%, var(--card)); }
+.podium .p1 .block { height: 96px; } .podium .p2 .block { height: 68px; opacity: .8; } .podium .p3 .block { height: 48px; opacity: .65; }
 .foot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 13px; padding-top: 16px; border-top: 1px solid var(--line); }
 .foot a { font-weight: 500; }
 
@@ -252,8 +268,29 @@ const SIGNUP = {
   cs: { signupOpen: "Přihlášky otevřené", h: "Hrát i bez iPhonu", p: "Napište jméno a příjmení. Pořadatel vás zařadí do úrovně a svou skupinu a zápasy uvidíte na této stránce.", first: "Jméno", last: "Příjmení", send: "Přihlásit se", sending: "Odesílám…", ok: "Hotovo, jste na seznamu. Po losu se tu objeví vaše skupina.", closed: "Los už proběhl, přihlášky jsou uzavřené. Požádejte pořadatele, ať vás přidá.", invalid: "Napište jméno a příjmení, jen písmena.", busy: "Teď je přihlášek příliš, zkuste to za minutu.", full: "Turnaj je plný.", fail: "Nepodařilo se odeslat. Zkontrolujte připojení a zkuste to znovu.", again: "Přihlásit dalšího hráče" },
   pl: { signupOpen: "Zapisy otwarte", h: "Zagraj bez iPhone’a", p: "Wpisz imię i nazwisko. Organizator doda cię do poziomu, a swoją grupę i mecze zobaczysz na tej stronie.", first: "Imię", last: "Nazwisko", send: "Zgłoś się", sending: "Wysyłanie…", ok: "Gotowe, jesteś na liście. Po losowaniu pojawi się tu twoja grupa.", closed: "Losowanie już się odbyło, zapisy są zamknięte. Poproś organizatora o dodanie.", invalid: "Wpisz imię i nazwisko, tylko litery.", busy: "Teraz jest za dużo zgłoszeń, spróbuj za minutę.", full: "Turniej jest pełny.", fail: "Nie udało się wysłać. Sprawdź połączenie i spróbuj ponownie.", again: "Zapisz kolejną osobę" },
 };
+const ROUNDSTXT = {
+  en: { rounds: "Rounds", rnd: "Round", court: "Court", standings: "Standings", pts: "Pts", wdl: "W-D-L", later: "Players are set when the previous round has all its scores.", rest: "Resting" },
+  es: { rounds: "Rondas", rnd: "Ronda", court: "Pista", standings: "Clasificación", pts: "Pts", wdl: "G-E-P", later: "Los jugadores se fijan cuando la ronda anterior tenga todos sus resultados.", rest: "Descansan" },
+  ru: { rounds: "Раунды", rnd: "Раунд", court: "Корт", standings: "Таблица", pts: "Очки", wdl: "В-Н-П", later: "Составы появятся, когда в предыдущем раунде будут все счета.", rest: "Отдыхают" },
+  de: { rounds: "Runden", rnd: "Runde", court: "Platz", standings: "Tabelle", pts: "Pkt", wdl: "S-U-N", later: "Die Spieler stehen fest, sobald die vorige Runde alle Ergebnisse hat.", rest: "Pause" },
+  fr: { rounds: "Tours", rnd: "Tour", court: "Terrain", standings: "Classement", pts: "Pts", wdl: "V-N-D", later: "Les joueurs sont fixés quand le tour précédent a tous ses scores.", rest: "Au repos" },
+  it: { rounds: "Turni", rnd: "Turno", court: "Campo", standings: "Classifica", pts: "Pti", wdl: "V-P-S", later: "I giocatori si conoscono quando il turno precedente ha tutti i punteggi.", rest: "Riposano" },
+  pt: { rounds: "Rodadas", rnd: "Rodada", court: "Quadra", standings: "Classificação", pts: "Pts", wdl: "V-E-D", later: "Os jogadores são definidos quando a rodada anterior tiver todos os placares.", rest: "Descansam" },
+  nl: { rounds: "Rondes", rnd: "Ronde", court: "Baan", standings: "Stand", pts: "Ptn", wdl: "W-G-V", later: "De spelers staan vast zodra de vorige ronde alle uitslagen heeft.", rest: "Rust" },
+  sv: { rounds: "Rundor", rnd: "Runda", court: "Bana", standings: "Ställning", pts: "P", wdl: "V-O-F", later: "Spelarna bestäms när förra rundan har alla resultat.", rest: "Vilar" },
+  cs: { rounds: "Kola", rnd: "Kolo", court: "Kurt", standings: "Pořadí", pts: "Body", wdl: "V-R-P", later: "Hráči se určí, až bude mít předchozí kolo všechna skóre.", rest: "Odpočívají" },
+  pl: { rounds: "Rundy", rnd: "Runda", court: "Kort", standings: "Tabela", pts: "Pkt", wdl: "W-R-P", later: "Gracze zostaną ustaleni, gdy poprzednia runda będzie miała wszystkie wyniki.", rest: "Odpoczywają" },
+};
+const PODIUM = {
+  en: { podium: "Podium", champ: "Congratulations, %!" }, es: { podium: "Podio", champ: "¡Enhorabuena, %!" },
+  ru: { podium: "Пьедестал", champ: "Поздравляем, %!" }, de: { podium: "Podium", champ: "Glückwunsch, %!" },
+  fr: { podium: "Podium", champ: "Félicitations, % !" }, it: { podium: "Podio", champ: "Congratulazioni, %!" },
+  pt: { podium: "Pódio", champ: "Parabéns, %!" }, nl: { podium: "Podium", champ: "Gefeliciteerd, %!" },
+  sv: { podium: "Prispall", champ: "Grattis, %!" }, cs: { podium: "Stupně vítězů", champ: "Gratulujeme, %!" },
+  pl: { podium: "Podium", champ: "Gratulacje, %!" },
+};
 const lang = (navigator.language || "en").slice(0, 2);
-const t = Object.assign({}, T.en, X.en, SIGNUP.en, T[lang] || {}, X[lang] || {}, SIGNUP[lang] || {});
+const t = Object.assign({}, T.en, X.en, SIGNUP.en, ROUNDSTXT.en, PODIUM.en, T[lang] || {}, X[lang] || {}, SIGNUP[lang] || {}, ROUNDSTXT[lang] || {}, PODIUM[lang] || {});
 const code = (new URLSearchParams(location.search).get("code") || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase();
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -294,6 +331,58 @@ function standings(div, group) {
   };
   return rank([...div.groups[group]], div.rules.ranking).map((p) => rows.get(p));
 }
+// Final order of a level with groups and playoffs, as in the app: the playoffs first (final, 3rd place…),
+// then everyone else by group place, wins and game difference.
+function finalRanking(div) {
+  const rank = new Map();
+  div.groups.forEach((_, g) => standings(div, g).forEach((r, place) => rank.set(r.player, { place, wins: r.wins, diff: r.gw - r.gl })));
+  const byGroup = (a, b) => { const x = rank.get(a) || { place: 99, wins: 0, diff: 0 }, y = rank.get(b) || { place: 99, wins: 0, diff: 0 };
+    return (x.place - y.place) || (y.wins - x.wins) || (y.diff - x.diff) || ((div.lots || [])[a] - (div.lots || [])[b]); };
+  const placed = new Set(), order = [];
+  div.rules.playoffs.forEach((rule, bracket) => {
+    const ms = div.matches.filter((m) => (key(m.stage) === "playoff" && m.stage.playoff.bracket === bracket) || (key(m.stage) === "thirdPlace" && m.stage.thirdPlace.bracket === bracket));
+    const last = Math.max(0, ...ms.filter((m) => key(m.stage) === "playoff").map((m) => m.stage.playoff.round));
+    const score = new Map();
+    for (const m of ms) {
+      const w = winnerOf(m.result);
+      for (const [e, side] of [[m.a, "a"], [m.b, "b"]]) {
+        const p = participant(div, e); if (typeof p !== "number") continue;
+        let v = 0;
+        if (key(m.stage) === "playoff") { v = m.stage.playoff.round; if (m.stage.playoff.round === last && w === side) v += 1; }
+        else v = last - 1 + (w === side ? 0.5 : 0.25);
+        score.set(p, Math.max(score.get(p) || 0, v));
+      }
+    }
+    const entrants = [...score.keys()].filter((p) => !placed.has(p)).sort((a, b) => score.get(a) === score.get(b) ? byGroup(a, b) : score.get(b) - score.get(a));
+    entrants.forEach((p) => { placed.add(p); order.push(p); });
+  });
+  const rest = div.players.map((_, i) => i).filter((i) => !placed.has(i)).sort(byGroup);
+  return order.concat(rest);
+}
+
+// Every match played (byes don't count): the tournament is over even if the organizer hasn't pressed Finish.
+const decided = (div) => div.matches.every((m) => { const a = participant(div, m.a), b = participant(div, m.b); return a === "bye" || b === "bye" || !!m.result; });
+function roundsDecided(data, div, results) {
+  const rows = (data.rounds || []).filter((r) => r.level === String(div.id).toLowerCase());
+  return rows.length >= div.rules.rounds.rounds && rows.every((r) => r.matches.every((m) => { const x = results.get(String(m.id).toLowerCase()); return x && !x.disputed; }));
+}
+
+// The end of the tournament: the top three with medals.
+function podium(names) {
+  if (!names.length) return null;
+  const card = el("section", "card podium");
+  card.append(el("h2", "", t.podium), el("p", "meta", t.champ.replace("%", names[0])));
+  const steps = el("div", "steps");
+  [1, 0, 2].forEach((place) => {
+    if (place >= names.length) { steps.appendChild(el("div", "step empty")); return; }
+    const step = el("div", "step p" + (place + 1));
+    step.append(el("span", "medal", place + 1), el("span", "who", names[place]), el("span", "block", ""));
+    steps.appendChild(step);
+  });
+  card.appendChild(steps);
+  return card;
+}
+
 const groupDone = (div, g) => div.matches.every((m) => key(m.stage) !== "group" || m.stage.group._0 !== g || m.result);
 function participant(div, e) {
   const k = key(e);
@@ -319,10 +408,13 @@ function render(data) {
   hasLive = live.size > 0;
   const divisions = data.tournament.divisions;
   for (const d of divisions) for (const m of d.matches) { const r = results.get(m.id.toLowerCase()); if (r && !r.disputed) m.result = { sets: r.sets }; m.meta = r; }
+  const over = data.status === "finished" || divisions.every((d) => d.rules.rounds ? roundsDecided(data, d, results) : decided(d));
+  status.textContent = over ? t.done : t.live;
+  status.className = "pill" + (over ? "" : " live");
   const people = divisions.reduce((n, d) => n + d.players.length, 0);
   $("eyebrow").textContent = data.starts_at ? new Date(data.starts_at).toLocaleDateString(lang, { weekday: "long", day: "numeric", month: "long" }) : "";
   $("hint").textContent = (divisions.length > 1 ? divisions.length + " " + t.levels + " · " : "") + people + " " + t.players;
-  $("invite").hidden = data.status === "finished";
+  $("invite").hidden = over;
   let current = 0; try { current = Math.min(Number(sessionStorage.getItem("level") || 0), divisions.length - 1); } catch (e) {}
   if (divisions.length > 1) divisions.forEach((d, i) => {
     const b = el("button", i === current ? "on" : "", d.rules.name); b.type = "button";
@@ -330,7 +422,14 @@ function render(data) {
   });
   levels.hidden = divisions.length < 2;
   const div = divisions[current];
+  if (div.rules.rounds) {
+    const order = renderRounds(data, div, results);
+    if (over) { const p = podium(order); if (p) board.insertBefore(p, board.firstChild); }
+    $("updated").textContent = t.updated + " " + new Date().toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
+    return;
+  }
   const pname = (e) => { const p = participant(div, e); return p === null ? t.pending : p === "bye" ? "—" : div.players[p].name; };
+  if (over) { const p = podium(finalRanking(div).map((i) => div.players[i].name)); if (p) board.appendChild(p); }
   // Scoreboard cells: one column per set, the winner of each set filled; more than one set leads with the sets score.
   const setCells = (m) => {
     const box = el("div", "sets"); if (!m.result) return box;
@@ -470,19 +569,79 @@ function renderDraft(data) {
   });
 }
 
+// A level played in rounds (Americano, Mexicano, King of the Court, Team Americano, Swiss): the rounds by time and court,
+// then the points table. The rounds come from the app (every phone computes the same ones); scores from club_results.
+function renderRounds(data, div, results) {
+  const board = $("board"), setup = div.rules.rounds, tour = data.tournament;
+  const pairs = setup.mode === "teamAmericano" || setup.mode === "swiss";
+  const players = pairs ? div.players.flatMap((p) => { const n = String(p.name).split(" / "); return [n[0], n[1] || n[0]]; })
+                        : div.players.map((p) => p.name);
+  const courts = (div.rules.courts && div.rules.courts.length) ? div.rules.courts : (tour.courts || []);
+  const start = tour.start ? new Date(tour.start) : null, slot = tour.slotMinutes || 0;
+  const rows = (data.rounds || []).filter((r) => r.level === String(div.id).toLowerCase()).sort((a, b) => a.number - b.number);
+  const score = (id) => { const r = results.get(String(id).toLowerCase()); return r && !r.disputed && r.sets && r.sets[0] ? r.sets[0] : null; };
+  const names = (team) => team.map((i) => players[i] || "—").join(" / ");
+  board.appendChild(el("h2", "", t.rounds));
+  for (let n = 1; n <= setup.rounds; n++) {
+    const card = el("article", "card group"), head = el("div", "group-head");
+    head.append(el("span", "group-letter", t.rnd + " " + n));
+    if (start) head.append(el("span", "group-done", new Date(start.getTime() + (n - 1) * slot * 60000).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })));
+    card.appendChild(head);
+    const list = el("div", "matches"), round = rows.find((r) => r.number === n);
+    if (!round) list.appendChild(el("div", "m", t.later));
+    else {
+      round.matches.forEach((m) => {
+        const row = el("div", "m"), who = el("div", "who"), s = score(m.id);
+        const w = s ? (s.a > s.b ? "a" : s.b > s.a ? "b" : null) : null;
+        who.append(el("span", "court", t.court + " " + (courts[m.court - 1] || m.court)));
+        who.append(el("span", w === "a" ? "w" : "", names(m.teamA)), el("span", w === "b" ? "w" : "", names(m.teamB)));
+        const sc = el("div", "score");
+        if (s) { const box = el("div", "sets"), col = el("div", "setcol");
+          col.append(el("span", "cell" + (w === "a" ? " win" : ""), s.a), el("span", "cell" + (w === "b" ? " win" : ""), s.b)); box.appendChild(col); sc.appendChild(box); }
+        row.append(who, sc); list.appendChild(row);
+      });
+      if (round.resting && round.resting.length) list.appendChild(el("div", "m", t.rest + ": " + round.resting.map((i) => players[i]).join(", ")));
+    }
+    card.appendChild(list); board.appendChild(card);
+  }
+  // Points table, like the app: points (or wins first for Swiss and King of the Court), then wins, then difference.
+  const table = players.map((name, i) => ({ i, name, pts: 0, against: 0, w: 0, d: 0, l: 0 }));
+  rows.forEach((r) => r.matches.forEach((m) => { const s = score(m.id); if (!s) return;
+    [[m.teamA, s.a, s.b], [m.teamB, s.b, s.a]].forEach(([team, own, other]) => team.forEach((i) => { const p = table[i]; if (!p) return;
+      p.pts += own; p.against += other; if (own > other) p.w++; else if (own === other) p.d++; else p.l++; })); }));
+  const winsFirst = setup.mode === "swiss" || setup.mode === "kingOfTheCourt";
+  const order = table.slice().sort((x, y) => winsFirst
+    ? (y.w - x.w) || (y.pts - x.pts) || ((y.pts - y.against) - (x.pts - x.against)) || (x.i - y.i)
+    : (y.pts - x.pts) || (y.w - x.w) || ((y.pts - y.against) - (x.pts - x.against)) || (x.i - y.i));
+  const shown = pairs ? order.filter((p) => p.i % 2 === 0).map((p) => ({ ...p, name: p.name + " / " + (players[p.i + 1] || "") })) : order;
+  board.appendChild(el("h2", "", t.standings));
+  const card = el("article", "card group"), wrap = el("div", "table-wrap"), tbl = el("table", "points"), hr = el("tr");
+  for (const [c, cls] of [["#", "name"], [t.player, "name"], [t.wdl, ""], ["±", ""], [t.pts, ""]]) hr.appendChild(el("th", cls, c));
+  tbl.appendChild(hr);
+  shown.forEach((p, k) => { const tr = el("tr", k < 3 ? "adv" : ""), pos = el("td", "pos"); pos.appendChild(el("span", "", k + 1));
+    const d = p.pts - p.against;
+    tr.append(pos, el("td", "name", p.name), el("td", "", p.w + "-" + p.d + "-" + p.l), el("td", "gd" + (d > 0 ? " up" : d < 0 ? " down" : ""), (d > 0 ? "+" : "") + d), el("td", "w", p.pts));
+    tbl.appendChild(tr); });
+  wrap.appendChild(tbl); card.appendChild(wrap); board.appendChild(card);
+  return shown.map((p) => p.name);
+}
+
 async function load() {
   if (code.length !== 6) return;
   try {
     const response = await fetch(SUPABASE_URL + "/rest/v1/rpc/public_club_tournament", {
       method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_code: code }) });
     const data = await response.json();
+    isOn = !!(data && data.status === "live");
     if (data && data.tournament) { signupShown = false; render(data); }
     else if (data && data.status === "draft") renderDraft(data);
     else $("updated").textContent = t.notFound;
   } catch (e) { /* offline: keep what's on screen */ }
 }
 // Every 15 seconds while a match is live, otherwise every minute.
-async function loop() { await load(); setTimeout(loop, hasLive ? 15000 : 60000); }
+// Updates by itself: every 15 seconds while the tournament is on, every minute before it starts or after it ends.
+let isOn = false;
+async function loop() { await load(); setTimeout(loop, hasLive || isOn ? 15000 : 60000); }
 loop();
 </script>
 </body>
