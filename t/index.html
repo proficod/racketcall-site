@@ -77,6 +77,15 @@ th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5) { width: 46px
 th:nth-child(6), td:nth-child(6) { width: 58px; padding-right: 18px; }
 th.name, td.name { text-align: left; }
 td.name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+td.name .person { display: flex; align-items: center; gap: 8px; min-width: 0; }
+td.name .person > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.faces { display: inline-flex; flex: none; }
+.face { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none; overflow: hidden;
+  font-size: 10px; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--accent), #5b1530); }
+.face + .face { margin-left: -8px; box-shadow: 0 0 0 2px var(--card, #1a0d12); }
+.face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.podium .face { width: 44px; height: 44px; font-size: 16px; }
+.podium .face + .face { margin-left: -14px; }
 td.pos { color: var(--muted); font-weight: 600; }
 td.w { font-weight: 700; }
 td.gd.up { color: var(--up); font-weight: 600; } td.gd.down { color: var(--down); font-weight: 600; }
@@ -294,6 +303,27 @@ const t = Object.assign({}, T.en, X.en, SIGNUP.en, ROUNDSTXT.en, PODIUM.en, T[la
 const code = (new URLSearchParams(location.search).get("code") || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase();
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+// Profile photos (only https links from the server), initials for everyone else.
+const initials = (name) => String(name || "?").split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+function faces(people) {
+  const box = el("span", "faces");
+  people.forEach(({ name, avatar }) => {
+    const f = el("span", "face", initials(name));
+    if (typeof avatar === "string" && avatar.startsWith("https://")) {
+      const img = document.createElement("img"); img.alt = ""; img.loading = "lazy"; img.src = avatar;
+      img.onload = () => { f.textContent = ""; f.appendChild(img); };
+    }
+    box.appendChild(f);
+  });
+  return box;
+}
+// An entrant's people: a pair ("Ana / Ivan") is two photos.
+const entrantPeople = (p) => { const n = String(p.name).split(" / ");
+  return n.length > 1 ? [{ name: n[0], avatar: p.avatar }, { name: n[1], avatar: p.avatar2 }] : [{ name: p.name, avatar: p.avatar }]; };
+function personCell(people, name) {
+  const td = el("td", "name"), wrap = el("span", "person");
+  wrap.append(faces(people), el("span", "", name)); td.appendChild(wrap); return td;
+}
 document.documentElement.lang = lang;
 $("title").textContent = t.title; $("hint").textContent = t.hint;
 for (const ch of (code || "——————").padEnd(6, "—")) $("code").appendChild(el("span", "", ch));
@@ -368,15 +398,16 @@ function roundsDecided(data, div, results) {
 }
 
 // The end of the tournament: the top three with medals.
-function podium(names) {
-  if (!names.length) return null;
+function podium(items) {
+  if (!items.length) return null;
+  const names = items.map((x) => x.name);
   const card = el("section", "card podium");
   card.append(el("h2", "", t.podium), el("p", "meta", t.champ.replace("%", names[0])));
   const steps = el("div", "steps");
   [1, 0, 2].forEach((place) => {
     if (place >= names.length) { steps.appendChild(el("div", "step empty")); return; }
     const step = el("div", "step p" + (place + 1));
-    step.append(el("span", "medal", place + 1), el("span", "who", names[place]), el("span", "block", ""));
+    step.append(el("span", "medal", place + 1), faces(items[place].people), el("span", "who", names[place]), el("span", "block", ""));
     steps.appendChild(step);
   });
   card.appendChild(steps);
@@ -429,7 +460,7 @@ function render(data) {
     return;
   }
   const pname = (e) => { const p = participant(div, e); return p === null ? t.pending : p === "bye" ? "—" : div.players[p].name; };
-  if (over) { const p = podium(finalRanking(div).map((i) => div.players[i].name)); if (p) board.appendChild(p); }
+  if (over) { const p = podium(finalRanking(div).map((i) => ({ name: div.players[i].name, people: entrantPeople(div.players[i]) }))); if (p) board.appendChild(p); }
   // Scoreboard cells: one column per set, the winner of each set filled; more than one set leads with the sets score.
   const setCells = (m) => {
     const box = el("div", "sets"); if (!m.result) return box;
@@ -458,7 +489,7 @@ function render(data) {
     standings(div, g).forEach((r, i) => {
       const tr = el("tr", i < adv ? "adv" : ""), d = r.gw - r.gl;
       const pos = el("td", "pos"); pos.appendChild(el("span", "", i + 1));
-      tr.append(pos, el("td", "name", div.players[r.player].name), el("td", "w", r.wins),
+      tr.append(pos, personCell(entrantPeople(div.players[r.player]), div.players[r.player].name), el("td", "w", r.wins),
                 el("td", "", r.gw), el("td", "", r.gl), el("td", "gd" + (d > 0 ? " up" : d < 0 ? " down" : ""), (d > 0 ? "+" : "") + d));
       table.appendChild(tr);
     });
@@ -576,6 +607,7 @@ function renderRounds(data, div, results) {
   const pairs = setup.mode === "teamAmericano" || setup.mode === "swiss";
   const players = pairs ? div.players.flatMap((p) => { const n = String(p.name).split(" / "); return [n[0], n[1] || n[0]]; })
                         : div.players.map((p) => p.name);
+  const photos = pairs ? div.players.flatMap((p) => [p.avatar, p.avatar2]) : div.players.map((p) => p.avatar);
   const courts = (div.rules.courts && div.rules.courts.length) ? div.rules.courts : (tour.courts || []);
   const start = tour.start ? new Date(tour.start) : null, slot = tour.slotMinutes || 0;
   const rows = (data.rounds || []).filter((r) => r.level === String(div.id).toLowerCase()).sort((a, b) => a.number - b.number);
@@ -613,17 +645,19 @@ function renderRounds(data, div, results) {
   const order = table.slice().sort((x, y) => winsFirst
     ? (y.w - x.w) || (y.pts - x.pts) || ((y.pts - y.against) - (x.pts - x.against)) || (x.i - y.i)
     : (y.pts - x.pts) || (y.w - x.w) || ((y.pts - y.against) - (x.pts - x.against)) || (x.i - y.i));
-  const shown = pairs ? order.filter((p) => p.i % 2 === 0).map((p) => ({ ...p, name: p.name + " / " + (players[p.i + 1] || "") })) : order;
+  const shown = (pairs ? order.filter((p) => p.i % 2 === 0).map((p) => ({ ...p, name: p.name + " / " + (players[p.i + 1] || ""),
+    people: [{ name: players[p.i], avatar: photos[p.i] }, { name: players[p.i + 1], avatar: photos[p.i + 1] }] }))
+    : order.map((p) => ({ ...p, people: [{ name: p.name, avatar: photos[p.i] }] })));
   board.appendChild(el("h2", "", t.standings));
   const card = el("article", "card group"), wrap = el("div", "table-wrap"), tbl = el("table", "points"), hr = el("tr");
   for (const [c, cls] of [["#", "name"], [t.player, "name"], [t.wdl, ""], ["±", ""], [t.pts, ""]]) hr.appendChild(el("th", cls, c));
   tbl.appendChild(hr);
   shown.forEach((p, k) => { const tr = el("tr", k < 3 ? "adv" : ""), pos = el("td", "pos"); pos.appendChild(el("span", "", k + 1));
     const d = p.pts - p.against;
-    tr.append(pos, el("td", "name", p.name), el("td", "", p.w + "-" + p.d + "-" + p.l), el("td", "gd" + (d > 0 ? " up" : d < 0 ? " down" : ""), (d > 0 ? "+" : "") + d), el("td", "w", p.pts));
+    tr.append(pos, personCell(p.people, p.name), el("td", "", p.w + "-" + p.d + "-" + p.l), el("td", "gd" + (d > 0 ? " up" : d < 0 ? " down" : ""), (d > 0 ? "+" : "") + d), el("td", "w", p.pts));
     tbl.appendChild(tr); });
   wrap.appendChild(tbl); card.appendChild(wrap); board.appendChild(card);
-  return shown.map((p) => p.name);
+  return shown.map((p) => ({ name: p.name, people: p.people }));
 }
 
 async function load() {
